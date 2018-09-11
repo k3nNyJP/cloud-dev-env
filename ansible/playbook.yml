@@ -1,0 +1,45 @@
+- name: Setup development environment
+  hosts: all
+  user: vagrant
+  tasks:
+    - name: Update and upgrade apt packages
+      become: yes
+      block:
+        - name: Update apt repositories
+          apt:
+            update_cache: yes
+            upgrade: yes
+    - name: Install kubernetes cli
+      become: yes
+      block:
+        - apt:
+            name: apt-transport-https
+            update_cache: yes
+        - apt_key:
+            url: 'https://packages.cloud.google.com/apt/doc/apt-key.gpg'
+            state: present
+        - apt_repository:
+            repo: 'deb http://apt.kubernetes.io/ kubernetes-xenial main'
+            state: present
+        - apt:
+            name: kubectl
+            update_cache: yes
+    - name: Install Node.js v8 via nvm
+      block:
+        - name: Download nvm
+          git:
+              dest: "{{ ansible_env.HOME }}/.nvm"
+              repo: https://github.com/creationix/nvm.git
+              version: v0.33.11
+        - name: Update .bashrc to load nvm
+          blockinfile:
+            path: "{{ ansible_env.HOME }}/.bashrc"
+            create: yes
+            block: |
+              export NVM_DIR="$HOME/.nvm"
+              [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            state: present
+        - name: Install Node.js v8
+          shell: . {{ ansible_env.HOME }}/.nvm/nvm.sh && nvm install 8.12.0 && nvm use 8.12.0
+          args:
+            executable: /bin/bash
